@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻宝游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            display: none;
+        }
+        .step.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>寻宝游戏</h1>
+    <audio id="bgm" src="background_music.mp3" loop></audio>
+    <div id="puzzle" class="step active">
+        <p>请解开谜题以继续：</p>
+        <p>密码：钥匙</p>
+        <input type="text" id="puzzleAnswer" placeholder="输入答案">
+        <button onclick="solvePuzzle()">提交</button>
+    </div>
+    <div id="library" class="step">
+        <p id="libraryText"></p>
+        <button onclick="decodeScript()">继续</button>
+    </div>
+    <div id="sacrifice" class="step">
+        <p>解码成功! 宝藏在一座古老的神庙中，需要找到祭品才能进入...</p>
+        <p>祭品：金苹果</p>
+        <input type="text" id="sacrificeAnswer" placeholder="输入祭品名称">
+        <button onclick="findSacrifice()">提交</button>
+    </div>
+    <div id="temple" class="step">
+        <p id="templeText"></p>
+        <button onclick="searchTemple()">继续</button>
+    </div>
+    <div id="treasure" class="step">
+        <p>恭喜! 你找到了传说中的宝藏!</p>
+        <img src="宝藏.jpg" alt="描述图片的替代文本">
+    </div>
+
+    <script>
+        let playerData = {};
+
+// 从 localStorage 获取玩家数据
+function loadPlayerData() {
+    const savedData = localStorage.getItem('playerData');
+    if (savedData) {
+        playerData = JSON.parse(savedData);
+    } else {
+        playerData = {
+            id: Date.now().toString(), // 生成唯一的玩家ID
+            nickname: '冒险家' + Math.floor(Math.random() * 1000), // 随机生成昵称
+            gameHistory: [] // 游戏历史
+        };
+    }
+    document.getElementById('nickname').innerText = playerData.nickname;
+}
+
+// 保存玩家数据到 localStorage
+function savePlayerData() {
+    localStorage.setItem('playerData', JSON.stringify(playerData));
+}
+
+// 异步加载文本文件
+async function fetchTextFile(url) {
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('网络响应失败');
+        }
+        const text = await response.text();
+        return text;
+    } catch (error) {
+        console.error('加载文本文件失败:', error);
+    }
+}
+
+// 更新页面内容
+async function updatePageContent(stepId, content) {
+    const element = document.getElementById(stepId);
+    if (element) {
+        element.querySelector('p').innerText = content;
+    }
+}
+
+// 初始化游戏
+async function initGame() {
+    loadPlayerData();
+
+    // 加载图书馆内容
+    const libraryContent = await fetchTextFile('library.txt');
+    updatePageContent('library', libraryContent);
+
+    // 加载神庙内容（可选，根据游戏逻辑决定何时加载）
+    // const templeContent = await fetchTextFile('temple.txt');
+    // ...
+
+    // 加载守卫内容（可选，根据游戏逻辑决定何时加载）
+    // const guardContent = await fetchTextFile('guard.txt');
+    // ...
+}
+
+// 解决谜题
+async function solvePuzzle() {
+    const answer = document.getElementById('puzzleAnswer').value;
+    if (answer === '钥匙') {
+        document.getElementById('puzzle').classList.remove('active');
+        document.getElementById('library').classList.add('active');
+        playerData.gameHistory.push('解开了图书馆的谜题');
+        savePlayerData();
+    } else {
+        alert("谜题解答错误! 无法前进。");
+    }
+}
+
+// 解码脚本（模拟异步解码并加载内容）
+async function decodeScript() {
+    document.getElementById('library').classList.remove('active');
+    document.getElementById('sacrifice').classList.add('active');
+    
+    // 模拟异步解码过程
+    setTimeout(async () => {
+        // 加载守卫内容（在此处或根据游戏逻辑在需要时加载）
+        const guardContent = await fetchTextFile('guard.txt');
+        // 可以选择在这里更新页面内容，或者根据游戏逻辑在其他地方使用
+        console.log(guardContent); // 仅用于调试
+    }, 1500);
+}
+
+// 找到祭品
+async function findSacrifice() {
+    const answer = document.getElementById('sacrificeAnswer').value;
+    if (answer === '金苹果') {
+        document.getElementById('sacrifice').classList.remove('active');
+        document.getElementById('temple').classList.add('active');
+        playerData.gameHistory.push('找到了金苹果，准备进入神庙');
+        savePlayerData();
+    } else {
+        alert("祭品错误! 无法进入神庙。");
+    }
+}
+
+// 搜索神庙
+async function searchTemple() {
+    document.getElementById('temple').classList.remove('active');
+    const random = Math.random();
+    if (random < 0.5) {
+        alert("糟糕! 遇到了神庙守卫!");
+        playerData.gameHistory.push('遇到了神庙守卫，未能继续前进');
+        savePlayerData();
+    } else {
+        document.getElementById('treasure').classList.add('active');
+        playerData.gameHistory.push('成功进入了神庙，找到了宝藏');
+        savePlayerData();
+    }
+}
+
+// 初始化页面和游戏逻辑
+window.onload = async () => {
+    initGame();
+
+    // 显示玩家昵称
+    const nicknameElement = document.createElement('p');
+    nicknameElement.innerText = '玩家昵称: ';
+    nicknameElement.id = 'nickname';
+    document.body.insertBefore(nicknameElement, document.body.firstChild);
+
+    // 添加背景音乐
+    const audio = new Audio('background-music.mp3');
+    audio.loop = true;
+    audio.play();
+};
+    </script>
+</body>
+</html>
